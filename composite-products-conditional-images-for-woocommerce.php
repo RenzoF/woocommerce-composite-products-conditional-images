@@ -154,10 +154,6 @@ class WC_CP_Conditional_Images {
 	 */
 	public static function frontend_script( $dependencies ) {
 
-		if ( ! current_theme_supports( 'wc-product-gallery-slider' ) ) {
-			return false;
-		}
-
 		$suffix = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min';
 		wp_register_script( 'wc-add-to-cart-composite-ci', self::plugin_url() . '/assets/js/single-product' . $suffix . '.js', array( 'jquery', 'underscore', 'backbone' ), self::$version, true );
 		$dependencies[] = 'wc-add-to-cart-composite-ci';
@@ -172,10 +168,6 @@ class WC_CP_Conditional_Images {
 
 		global $product;
 
-		if ( ! current_theme_supports( 'wc-product-gallery-slider' ) ) {
-			return false;
-		}
-
 		$has_overlay_image_scenarios = false;
 		$scenario_metadata           = $product->get_scenario_data();
 
@@ -189,7 +181,81 @@ class WC_CP_Conditional_Images {
 		}
 
 		if ( $has_overlay_image_scenarios ) {
+			// Dequeue zoom scripts
 			wp_dequeue_script( 'zoom' );
+			wp_dequeue_script( 'flatsome-zoom' );
+			
+			// Method 1: Using wp_enqueue_style
+			wp_register_style(
+				'wc-cp-ci-disable-zoom',
+				false,
+				array(),
+				self::$version
+			);
+			wp_enqueue_style('wc-cp-ci-disable-zoom');
+			wp_add_inline_style(
+				'wc-cp-ci-disable-zoom',
+				'
+				/* Hide zoom tools */
+				.product-gallery .image-tools,
+				.product-gallery .image-tools.bottom,
+				.product-gallery .image-tools.top {
+					display: none !important;
+					visibility: hidden !important;
+					opacity: 0 !important;
+				}
+				
+				/* Disable zoom cursor */
+				.product-gallery .woocommerce-product-gallery__image img {
+					pointer-events: none !important;
+					cursor: default !important;
+				}
+				
+				/* Remove zoom effect */
+				.product-gallery .woocommerce-product-gallery__image a {
+					pointer-events: none !important;
+				}
+				
+				/* Disable lightbox */
+				.pswp {
+					display: none !important;
+				}
+				'
+			);
+
+			// Method 2: Using wp_head with error logging
+			add_action('wp_head', function() {
+				error_log('WC_CP_Conditional_Images: Adding styles to wp_head');
+				?>
+				<!-- WC Composite Products Conditional Images Styles -->
+				<style type="text/css">
+				/* Hide zoom tools */
+				.product-gallery .image-tools,
+				.product-gallery .image-tools.bottom,
+				.product-gallery .image-tools.top {
+					display: none !important;
+					visibility: hidden !important;
+					opacity: 0 !important;
+				}
+				
+				/* Disable zoom cursor */
+				.product-gallery .woocommerce-product-gallery__image img {
+					pointer-events: none !important;
+					cursor: default !important;
+				}
+				
+				/* Remove zoom effect */
+				.product-gallery .woocommerce-product-gallery__image a {
+					pointer-events: none !important;
+				}
+				
+				/* Disable lightbox */
+				.pswp {
+					display: none !important;
+				}
+				</style>
+				<?php
+			});
 		}
 	}
 
@@ -270,10 +336,6 @@ class WC_CP_Conditional_Images {
 	 * @return array
 	 */
 	public static function scenario_data( $scenario_data, $component_options, $composite ) {
-
-		if ( ! current_theme_supports( 'wc-product-gallery-slider' ) ) {
-			return $scenario_data;
-		}
 
 		$scenario_metadata = $composite->get_scenario_data();
 
